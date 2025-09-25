@@ -129,24 +129,38 @@ jobs:
           }
           Write-Host "`e[32m✅ RDP port 3389 is open and accessible!`e[0m"
 
-      - name: 📋 RDP Access Summary
+            - name: 📋 RDP Access Summary
         run: |
-          @"
-          ## 🔑 RDP Access Information
-          | Field     | Value                |
-          |-----------|----------------------|
-          | Address   | $env:TAILSCALE_IP    |
-          | Username  | $env:RDP_USER        |
-          | Password  | $env:RDP_PASS        |
+          Write-Host "`e[36m📝 Writing RDP summary...`e[0m"
 
-          👉 Use **Remote Desktop Connection (mstsc.exe)** on Windows  
-          👉 Or **Remmina** on Linux / MacOS.
+          # Build the summary into a variable (double-quoted here-string to allow $env: vars to expand)
+          $summary = @"
+## 🔑 RDP Access Information
+| Field     | Value                |
+|-----------|----------------------|
+| Address   | $env:TAILSCALE_IP    |
+| Username  | $env:RDP_USER        |
+| Password  | $env:RDP_PASS        |
 
-          🕒 Session will stay alive for **12 hours** max.
+👉 Use **Remote Desktop Connection (mstsc.exe)** on Windows  
+👉 Or **Remmina** on Linux / MacOS.
 
-          ---
-          🔖 Watermark: RDP Made by **VayVy**, IG: vay.test
-          "@ | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+🕒 Session will stay alive for **12 hours** max.
+
+---
+🔖 Watermark: RDP Made by **VayVy**, IG: vay.test
+"@
+
+          # Debugging: uncomment to print values into job log (optional)
+          # Write-Host "DBG: TAILSCALE_IP=$($env:TAILSCALE_IP)"
+          # Write-Host "DBG: RDP_USER=$($env:RDP_USER)"
+          # Write-Host "DBG: RDP_PASS=$($env:RDP_PASS)"
+
+          # Write summary to the Actions step summary file
+          # Use Set-Content to ensure exact UTF8 without BOM
+          Set-Content -Path $env:GITHUB_STEP_SUMMARY -Value $summary -Encoding utf8 -NoNewline:$false
+          Write-Host "`e[32m✅ RDP summary written to GITHUB_STEP_SUMMARY.`e[0m"
+
 
       - name: 📊 Live Resource Monitor (Background)
         run: |
