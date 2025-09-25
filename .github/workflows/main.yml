@@ -32,8 +32,14 @@ jobs:
       - name: 👤 Create RDP User with Secure Password
         run: |
           Write-Host "`e[36m👤 Creating user 'Vayvy' with secure password...`e[0m"
-          Add-Type -AssemblyName System.Web
-          $password = [System.Web.Security.Membership]::GeneratePassword(14,3)
+
+          # Generate secure random password (14 chars)
+          Add-Type -AssemblyName System.Security
+          $crypto = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+          $bytes = New-Object byte[] 12
+          $crypto.GetBytes($bytes)
+          $password = [Convert]::ToBase64String($bytes).Substring(0,14)
+
           $securePass = ConvertTo-SecureString $password -AsPlainText -Force
 
           if (-not (Get-LocalUser -Name "Vayvy" -ErrorAction SilentlyContinue)) {
@@ -137,6 +143,9 @@ jobs:
           👉 Or **Remmina** on Linux / MacOS.
 
           🕒 Session will stay alive for **12 hours** max.
+
+          ---
+          🔖 Watermark: RDP Made by **VayVy**, IG: vay.test
           "@ | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
 
       - name: 📊 Live Resource Monitor (Background)
@@ -161,6 +170,14 @@ jobs:
               Remove-LocalUser -Name "Vayvy" -ErrorAction SilentlyContinue
           }
           netsh advfirewall firewall delete rule name="RDP-Tailscale" > $null 2>&1
-          & "$env:ProgramFiles\Tailscale\tailscale.exe" logout
+
+          # Detect tailscale.exe path safely
+          $tsPath = Get-Command tailscale.exe -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source
+          if ($tsPath) {
+              & $tsPath logout
+          } else {
+              Write-Host "`e[33m⚠️ Tailscale executable not found, skipping logout.`e[0m"
+          }
+
           Stop-Service -Name TermService -Force
           Write-Host "`e[32m✅ Cleanup completed.`e[0m"
